@@ -37,7 +37,7 @@ const (
 	defaultInstanceType                  = "t2.micro"
 	defaultDeviceName                    = "/dev/sda1"
 	defaultRootSize                      = 16
-	defaultVolumeType                    = "gp2"
+	defaultVolumeType                    = "gp3"
 	defaultZone                          = "a"
 	defaultSecurityGroup                 = machineSecurityGroupName
 	defaultSSHPort                       = 22
@@ -98,6 +98,9 @@ type Driver struct {
 	DeviceName                    string
 	RootSize                      int64
 	VolumeType                    string
+	VolumeEncrypted               bool
+	VolumeIops                    int64
+	VolumeThroughput              int64
 	IamInstanceProfile            string
 	VpcId                         string
 	SubnetId                      string
@@ -207,11 +210,26 @@ func (d *Driver) GetCreateFlags() []mcnflag.Flag {
 			Value:  defaultRootSize,
 			EnvVar: "AWS_ROOT_SIZE",
 		},
+		mcnflag.BoolFlag{
+			Name:   "amazonec2-volume-encrypted",
+			Usage:  "Amazon EBS volume encryption",
+			EnvVar: "AWS_VOLUME_ENCRYPTED",
+		},
 		mcnflag.StringFlag{
 			Name:   "amazonec2-volume-type",
 			Usage:  "Amazon EBS volume type",
 			Value:  defaultVolumeType,
 			EnvVar: "AWS_VOLUME_TYPE",
+		},
+		mcnflag.IntFlag{
+			Name:   "amazonec2-volume-iops",
+			Usage:  "AWS disk iops (default: 3000)",
+			EnvVar: "AWS_VOLUME_IOPS",
+		},
+		mcnflag.IntFlag{
+			Name:   "amazonec2-volume-throughput",
+			Usage:  "AWS disk throughput in MB/s",
+			EnvVar: "AWS_VOLUME_THROUGHPUT",
 		},
 		mcnflag.StringFlag{
 			Name:   "amazonec2-iam-instance-profile",
@@ -387,6 +405,9 @@ func (d *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 	d.DeviceName = flags.String("amazonec2-device-name")
 	d.RootSize = int64(flags.Int("amazonec2-root-size"))
 	d.VolumeType = flags.String("amazonec2-volume-type")
+	d.VolumeEncrypted = flags.Bool("amazonec2-volume-encrypted")
+	d.VolumeIops = int64(flags.Int("amazonec2-volume-iops"))
+	d.VolumeThroughput = int64(flags.Int("amazonec2-volume-throughput"))
 	d.IamInstanceProfile = flags.String("amazonec2-iam-instance-profile")
 	d.SSHUser = flags.String("amazonec2-ssh-user")
 	d.SSHPort = flags.Int("amazonec2-ssh-port")
@@ -644,6 +665,17 @@ func (d *Driver) innerCreate() error {
 			DeleteOnTermination: aws.Bool(true),
 		},
 	}
+
+	if d.VolumeEncrypted {
+		bdm.Ebs.Encrypted = aws.Bool(d.VolumeEncrypted)
+	}
+	if d.VolumeIops != 0 {
+		bdm.Ebs.Iops = aws.Int64(d.VolumeIops)
+	}
+	if d.VolumeThroughput != 0 {
+		bdm.Ebs.Throughput = aws.Int64(d.VolumeThroughput)
+	}
+
 	netSpecs := []*ec2.InstanceNetworkInterfaceSpecification{{
 		DeviceIndex:              aws.Int64(0), // eth0
 		Groups:                   makePointerSlice(d.securityGroupIds()),

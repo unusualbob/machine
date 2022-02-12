@@ -1,14 +1,38 @@
 # ⚠️This is a fork of Docker Machine ⚠
 
-This is a fork of Docker Machine maintained by GitLab for [fixing critical bugs](https://docs.gitlab.com/runner/executors/docker_machine.html#forked-version-of-docker-machine).
+This is a **fork of the fork** of Docker Machine maintained by GitLab for [fixing critical bugs](https://docs.gitlab.com/runner/executors/docker_machine.html#forked-version-of-docker-machine).
 
-For a new merge request to be considered, the following questions must be answered:
+I needed some new feature changes to the Amazon AWS driver to allow drive encryption, and
+to customize iops and throughput on mounted volumes. I figured it was worth sharing my work
+in case someone else needs it.
 
-  * What critical bug this MR is fixing?
-  * How does this change help reduce cost of usage? What scale of cost reduction is it?
-  * In what scenarios is this change usable with GitLab Runner's `docker+machine` executor? 
+### WARNING: I DO NOT KNOW GOLANG
+This was hacked together just by copying the syntax in the existing driver file. I could be doing something
+stupid here and have no idea.
 
-Builds from this fork can be downloaded at https://gitlab-docker-machine-downloads.s3.amazonaws.com/main/index.html
+### Use at your own risk
+
+## Building the binary
+I modified the existing dockerfile in this repo to build the docker-machine binary, since I
+didn't want to install Go and it was easy enough.
+
+First to build the binary run:
+```shell
+sudo DOCKER_BUILDKIT=1 docker build -t docker-machine .
+```
+
+Next, once it is done, we need to get the binary out of the image. Annoyingly
+there is no great way to just extract a single file from a docker image. Instead
+it is easier to just run the image as a container and copy it out that way.
+So let's run the image:
+```shell
+sudo docker run -it --rm --name docker-machine docker-machine /bin/sh
+```
+Now to get the binary out, open another terminal and run:
+```shell
+sudo docker cp docker-machine:/bin/docker-machine .
+```
+Now you can run `exit` on the first terminal to stop the container.
 
 # Docker Machine
 

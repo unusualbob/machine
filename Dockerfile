@@ -16,3 +16,10 @@ WORKDIR /go/src/github.com/docker/machine
 
 COPY . ./
 RUN mkdir bin
+
+RUN make clean
+RUN make build
+
+RUN sha256sum bin/docker-machine
+# For simpler copying path, put it in root /bin
+RUN cp bin/docker-machine /bin/docker-machine
