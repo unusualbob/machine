@@ -34,6 +34,20 @@ sudo docker cp docker-machine:/bin/docker-machine .
 ```
 Now you can run `exit` on the first terminal to stop the container.
 
+## Using the new options:
+* Volume encryption can now be enabled via: 
+  * `amazonec2-volume-encrypted=true`
+  * Valid values are `true` or `false`
+  * If unset uses account default or AMI setting
+* Volume iops can now be provisioned via:
+  * `amazonec2-volume-iops=5000`
+  * Valid values are integers
+  * If unset uses volume type default
+* Volume thoughput can now be provisioned via:
+  * `amazonec2-volume-throughput=300`
+  * Valid values are integers
+  * Value is in MBps throughput
+s
 # Docker Machine
 
 ![](https://docs.docker.com/machine/img/logo.png)
